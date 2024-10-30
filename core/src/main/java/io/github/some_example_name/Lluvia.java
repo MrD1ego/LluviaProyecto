@@ -6,112 +6,83 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class Lluvia {
-	private Array<Rectangle> rainDropsPos;
-	private Array<Integer> rainDropsType;
-    private long lastDropTime;
+    private Array<Gota> gotas;
     private Texture gotaBuena;
     private Texture gotaMala;
-
     private Texture gotaDorada;
-
-    private Sound shinySound;
     private Sound dropSound;
+    private Sound hurtSound;
+    private Sound shinySound;
     private Music rainMusic;
+    private long lastDropTime;
 
-	public Lluvia(Texture gotaBuena, Texture gotaMala, Texture gotaDorada, Sound shinySound , Sound ss, Music mm) {
-		rainMusic = mm;
-		dropSound = ss;
-        this.shinySound = shinySound;
-		this.gotaBuena = gotaBuena;
-		this.gotaMala = gotaMala;
+    public Lluvia(Texture gotaBuena, Texture gotaMala, Texture gotaDorada, Sound shinySound, Sound dropSound, Sound hurtSound, Music rainMusic) {
+        this.gotaBuena = gotaBuena;
+        this.gotaMala = gotaMala;
         this.gotaDorada = gotaDorada;
-	}
+        this.shinySound = shinySound;
+        this.dropSound = dropSound;
+        this.hurtSound = hurtSound;
+        this.rainMusic = rainMusic;
+        gotas = new Array<>();
+        lastDropTime = 0;
 
-	public void crear() {
-		rainDropsPos = new Array<Rectangle>();
-		rainDropsType = new Array<Integer>();
-		crearGotaDeLluvia();
-	      // start the playback of the background music immediately
-	      rainMusic.setLooping(true);
-	      rainMusic.play();
-	}
+        rainMusic.setLooping(true);
+        rainMusic.play();
+    }
 
-	private void crearGotaDeLluvia() {
-	      Rectangle raindrop = new Rectangle();
-	      raindrop.x = MathUtils.random(0, 800-64);
-	      raindrop.y = 480;
-	      raindrop.width = 64;
-	      raindrop.height = 64;
-	      rainDropsPos.add(raindrop);
-	      // ver el tipo de gota
+    public void crear() {
+        crearGotaDeLluvia();
+    }
 
+    private void crearGotaDeLluvia() {
         int randomTipo = MathUtils.random(1, 10);
+        Gota nuevaGota;
+
         if (randomTipo < 3) {
-            rainDropsType.add(1); // gota mala
+            nuevaGota = new GotaMala(MathUtils.random(0, Gdx.graphics.getWidth()), Gdx.graphics.getHeight(), hurtSound);
         } else if (randomTipo == 10) {
-            rainDropsType.add(3); // gota dorada
+            nuevaGota = new GotaDorada(MathUtils.random(0, Gdx.graphics.getWidth()), Gdx.graphics.getHeight(), shinySound);
         } else {
-            rainDropsType.add(2); // gota buena
+            nuevaGota = new GotaBuena(MathUtils.random(0, Gdx.graphics.getWidth()), Gdx.graphics.getHeight(), dropSound);
         }
 
+        gotas.add(nuevaGota);
+        lastDropTime = TimeUtils.nanoTime();
+    }
 
-	      lastDropTime = TimeUtils.nanoTime();
-	   }
+    public void actualizarMovimiento(Tarro tarro) {
+        // generar gotas de lluvia
+        if (TimeUtils.nanoTime() - lastDropTime > 100000000) crearGotaDeLluvia();
 
-   public void actualizarMovimiento(Tarro tarro) {
-	   // generar gotas de lluvia
-	   if(TimeUtils.nanoTime() - lastDropTime > 100000000) crearGotaDeLluvia();
-
-
-	   // revisar si las gotas cayeron al suelo o chocaron con el tarro
-	   for (int i=0; i < rainDropsPos.size; i++ ) {
-		  Rectangle raindrop = rainDropsPos.get(i);
-	      raindrop.y -= 300 * Gdx.graphics.getDeltaTime();
-	      //cae al suelo y se elimina
-	      if(raindrop.y + 64 < 0) {
-	    	  rainDropsPos.removeIndex(i);
-	    	  rainDropsType.removeIndex(i);
-	      }
-	      if(raindrop.overlaps(tarro.getArea())) { //la gota choca con el tarro
-	    	if(rainDropsType.get(i)==1) { // gota dañina
-	    	  tarro.dañar();
-	    	  rainDropsPos.removeIndex(i);
-	          rainDropsType.removeIndex(i);
-	      	}else if (rainDropsType.get(i) == 2) { // gota a recolectar
-	    	  tarro.sumarPuntos(10);
-	          dropSound.play();
-	          rainDropsPos.removeIndex(i);
-	          rainDropsType.removeIndex(i);
-	      	}else if (rainDropsType.get(i) == 3){
-              tarro.sumarPuntos(50);
-              shinySound.play();
-              rainDropsPos.removeIndex(i);
-              rainDropsType.removeIndex(i);
+        // revisar si las gotas cayeron al suelo o chocaron con el tarro
+        for (int i = 0; i < gotas.size; i++) {
+            Gota gota = gotas.get(i);
+            gota.getArea().y -= 300 * Gdx.graphics.getDeltaTime();
+            // cae al suelo y se elimina
+            if (gota.getArea().y + 64 < 0) {
+                gotas.removeIndex(i);
             }
-	      }
-	   }
-   }
+            if (gota.getArea().overlaps(tarro.getArea())) { // la gota choca con el tarro
+                gota.interactuarConTarro(tarro);
+                gotas.removeIndex(i);
+            }
+        }
+    }
 
-   public void actualizarDibujoLluvia(SpriteBatch batch) {
+    public void actualizarDibujoLluvia(SpriteBatch batch) {
+        for (Gota gota : gotas) {
+            gota.dibujar(batch);
+        }
+    }
 
-	  for (int i=0; i < rainDropsPos.size; i++ ) {
-		  Rectangle raindrop = rainDropsPos.get(i);
-		  if(rainDropsType.get(i)==1) // gota dañina
-	         batch.draw(gotaMala, raindrop.x, raindrop.y);
-		  else if(rainDropsType.get(i)==2)
-			 batch.draw(gotaBuena, raindrop.x, raindrop.y);
-          else if (rainDropsType.get(i)==3)
-              batch.draw(gotaDorada, raindrop.x, raindrop.y);
-	   }
-   }
-   public void destruir() {
-	      dropSound.dispose();
-	      rainMusic.dispose();
-   }
-
+    public void destruir() {
+        rainMusic.stop();
+        rainMusic.dispose();
+    }
 }
+

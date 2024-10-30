@@ -4,7 +4,6 @@ package io.github.some_example_name;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -39,7 +38,8 @@ public class GameLluvia extends ApplicationAdapter {
           Sound shinySound = Gdx.audio.newSound(Gdx.files.internal("shiny.mp3"));
 
 	      Music rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
-          lluvia = new Lluvia(gota, gotaMala, gotaDorada,shinySound, dropSound, rainMusic);
+
+          lluvia = new Lluvia(gota, gotaMala, gotaDorada, shinySound, dropSound, hurtSound, rainMusic);
 
 	      // camera
 	      camera = new OrthographicCamera();

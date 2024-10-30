@@ -19,6 +19,7 @@ public class Tarro {
 	   private boolean herido = false;
 	   private int tiempoHeridoMax=50;
 	   private int tiempoHerido;
+       private Lluvia lluvia;
 
 	   public Tarro(Texture tex, Sound ss) {
 		   bucketImage = tex;
@@ -80,7 +81,7 @@ public class Tarro {
 
            if(Gdx.input.isKeyPressed(Input.Keys.UP)) bucket.y += velx * Gdx.graphics.getDeltaTime();
            if(Gdx.input.isKeyPressed(Input.Keys.DOWN)) bucket.y -= velx * Gdx.graphics.getDeltaTime();
-           
+
 		   // que no se salga de los bordes izq y der
 		   if(bucket.x < 0) bucket.x = 0;
 		   if(bucket.x > 800 - 64) bucket.x = 800 - 64;
@@ -97,5 +98,4 @@ public class Tarro {
    public boolean estaHerido() {
 	   return herido;
    }
-
 }
